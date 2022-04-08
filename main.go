@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
+	"github.com/syndtr/goleveldb/leveldb"
 	"log"
 	"os"
 	"os/signal"
@@ -30,10 +31,24 @@ func main() {
 		emojiTarget = "kek"
 	}
 
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "kekboard.leveldb"
+	}
+
 	client, err := discordgo.New("Bot " + token)
 	if err != nil {
 		log.Fatalln("failed to create discord client:", err)
 	}
+
+	db, err := leveldb.OpenFile(dbPath, nil)
+	if err != nil {
+		log.Fatalln("failed to open leveldb:", err)
+	}
+
+	defer func(db *leveldb.DB) {
+		_ = db.Close()
+	}(db)
 
 	client.AddHandlerOnce(func(_ *discordgo.Session, ready *discordgo.Ready) {
 		log.Printf("Logged in as %s#%s\n", ready.User.Username, ready.User.Discriminator)
