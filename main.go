@@ -22,6 +22,10 @@ func main() {
 		log.Fatalln("failed to create discord client:", err)
 	}
 
+	client.AddHandlerOnce(func(_ *discordgo.Session, ready *discordgo.Ready) {
+		log.Printf("Logged in as %s#%s\n", ready.User.Username, ready.User.Discriminator)
+	})
+
 	if err = client.Open(); err != nil {
 		log.Fatalln("failed to open discord session:", err)
 	}
