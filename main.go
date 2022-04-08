@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 )
 
@@ -17,6 +19,17 @@ func main() {
 		log.Fatalln("`BOT_TOKEN` env variable is not set")
 	}
 
+	reactionThresholdStr := os.Getenv("REACTION_THRESHOLD")
+	reactionThreshold, err := strconv.Atoi(reactionThresholdStr)
+	if err != nil {
+		log.Fatalln("failed to parse `REACTION_THRESHOLD` env variable:", err)
+	}
+
+	emojiTarget := os.Getenv("EMOJI_TARGET")
+	if emojiTarget == "" {
+		emojiTarget = "kek"
+	}
+
 	client, err := discordgo.New("Bot " + token)
 	if err != nil {
 		log.Fatalln("failed to create discord client:", err)
@@ -24,6 +37,28 @@ func main() {
 
 	client.AddHandlerOnce(func(_ *discordgo.Session, ready *discordgo.Ready) {
 		log.Printf("Logged in as %s#%s\n", ready.User.Username, ready.User.Discriminator)
+	})
+
+	client.AddHandler(func(session *discordgo.Session, reactionAdd *discordgo.MessageReactionAdd) {
+		message, err := session.ChannelMessage(reactionAdd.ChannelID, reactionAdd.MessageID)
+		if err != nil {
+			log.Println("received reaction but unable to get message:", reactionAdd.ChannelID, reactionAdd.MessageID)
+
+			return
+		}
+
+		kekCount := 0
+		for _, reaction := range message.Reactions {
+			if strings.Contains(strings.ToLower(reaction.Emoji.Name), emojiTarget) {
+				kekCount += reaction.Count
+			}
+		}
+
+		log.Printf("message %s has %d kek reactions", reactionAdd.MessageID, kekCount)
+
+		if kekCount >= reactionThreshold {
+			log.Println("message reached reaction threshold:", reactionAdd.MessageID)
+		}
 	})
 
 	if err = client.Open(); err != nil {
