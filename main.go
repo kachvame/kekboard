@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -64,6 +65,10 @@ func main() {
 		return
 	}
 
+	getMessageKey := func(reaction *discordgo.MessageReaction) []byte {
+		return []byte(fmt.Sprintf("message-%s-%s", reaction.ChannelID, reaction.MessageID))
+	}
+
 	handleReaction := func(session *discordgo.Session, reaction *discordgo.MessageReaction) {
 		message, err := session.ChannelMessage(reaction.ChannelID, reaction.MessageID)
 		if err != nil {
@@ -72,11 +77,42 @@ func main() {
 			return
 		}
 
+		messageKey := getMessageKey(reaction)
 		kekCount := getKekCount(message)
+
 		log.Printf("message %s has %d kek reactions", reaction.MessageID, kekCount)
 
-		if kekCount >= reactionThreshold {
-			log.Println("message has enough reactions:", reaction.MessageID)
+		hasEnoughReactions := kekCount >= reactionThreshold
+
+		_, err = db.Get(messageKey, nil)
+		isOnKekboard := err == nil
+
+		log.Println("has enough reactions", hasEnoughReactions, "is on kekboard", isOnKekboard)
+
+		if hasEnoughReactions == isOnKekboard {
+			// TODO: edit message if on kekboard
+
+			return
+		}
+
+		// TODO: send to kekboard channel
+
+		if hasEnoughReactions {
+			log.Println("adding to kekboard")
+
+			err = db.Put(messageKey, []byte("ok"), nil)
+			if err != nil {
+				log.Println("failed to add message to kekboard:", err)
+			}
+
+			return
+		}
+
+		log.Println("removing from kekboard")
+
+		err = db.Delete(messageKey, nil)
+		if err != nil {
+			log.Println("failed to remove message from kekboard:", err)
 		}
 	}
 
