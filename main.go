@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
@@ -12,6 +13,12 @@ import (
 	"strings"
 	"syscall"
 )
+
+type kekboardMessageState struct {
+	ChannelID string
+	MessageID string
+	Reactions int
+}
 
 func main() {
 	_ = godotenv.Load()
@@ -35,6 +42,11 @@ func main() {
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
 		dbPath = "kekboard.leveldb"
+	}
+
+	kekboardChannelId := os.Getenv("KEKBOARD_CHANNEL_ID")
+	if kekboardChannelId == "" {
+		log.Fatalln("`KEKBOARD_CHANNEL_ID` env variable is not set")
 	}
 
 	client, err := discordgo.New("Bot " + token)
@@ -84,7 +96,7 @@ func main() {
 
 		hasEnoughReactions := kekCount >= reactionThreshold
 
-		_, err = db.Get(messageKey, nil)
+		storedState, err := db.Get(messageKey, nil)
 		isOnKekboard := err == nil
 
 		log.Println("has enough reactions", hasEnoughReactions, "is on kekboard", isOnKekboard)
@@ -95,12 +107,28 @@ func main() {
 			return
 		}
 
-		// TODO: send to kekboard channel
-
 		if hasEnoughReactions {
 			log.Println("adding to kekboard")
 
-			err = db.Put(messageKey, []byte("ok"), nil)
+			message, err := session.ChannelMessageSend(kekboardChannelId, message.Content)
+			if err != nil {
+				log.Println("failed to send message to kekboard channel:", err)
+
+				return
+			}
+
+			state := kekboardMessageState{
+				ChannelID: message.ChannelID,
+				MessageID: message.ID,
+				Reactions: kekCount,
+			}
+
+			marshaledState, err := json.Marshal(state)
+			if err != nil {
+				log.Println("failed to marshal state:", err)
+			}
+
+			err = db.Put(messageKey, marshaledState, nil)
 			if err != nil {
 				log.Println("failed to add message to kekboard:", err)
 			}
@@ -109,6 +137,20 @@ func main() {
 		}
 
 		log.Println("removing from kekboard")
+
+		state := kekboardMessageState{}
+
+		err = json.Unmarshal(storedState, &state)
+		if err != nil {
+			log.Println("failed to unmarshal stored state:", err)
+
+			return
+		}
+
+		err = session.ChannelMessageDelete(state.ChannelID, state.MessageID)
+		if err != nil {
+			log.Println("failed to delete message:", err)
+		}
 
 		err = db.Delete(messageKey, nil)
 		if err != nil {
