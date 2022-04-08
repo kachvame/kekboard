@@ -94,9 +94,15 @@ func main() {
 
 	getMessageEmbed := func(message *discordgo.Message, author *discordgo.Member, guildID string) []*discordgo.MessageEmbed {
 		embeds := make([]*discordgo.MessageEmbed, 0, 4)
+
+		authorName := author.Nick
+		if authorName == "" {
+			authorName = author.User.Username
+		}
+
 		embeds = append(embeds, &discordgo.MessageEmbed{
 			Author: &discordgo.MessageEmbedAuthor{
-				Name:    author.Nick,
+				Name:    authorName,
 				IconURL: author.AvatarURL("128"),
 			},
 			Description: message.Content,
