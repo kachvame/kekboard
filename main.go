@@ -39,26 +39,42 @@ func main() {
 		log.Printf("Logged in as %s#%s\n", ready.User.Username, ready.User.Discriminator)
 	})
 
-	client.AddHandler(func(session *discordgo.Session, reactionAdd *discordgo.MessageReactionAdd) {
-		message, err := session.ChannelMessage(reactionAdd.ChannelID, reactionAdd.MessageID)
+	getKekCount := func(message *discordgo.Message) (count int) {
+		for _, reaction := range message.Reactions {
+			if strings.Contains(strings.ToLower(reaction.Emoji.Name), emojiTarget) {
+				count += reaction.Count
+			}
+		}
+
+		return
+	}
+
+	handleReaction := func(session *discordgo.Session, reaction *discordgo.MessageReaction) {
+		message, err := session.ChannelMessage(reaction.ChannelID, reaction.MessageID)
 		if err != nil {
-			log.Println("received reaction but unable to get message:", reactionAdd.ChannelID, reactionAdd.MessageID)
+			log.Println("received reaction but unable to get message:", reaction.ChannelID, reaction.MessageID)
 
 			return
 		}
 
-		kekCount := 0
-		for _, reaction := range message.Reactions {
-			if strings.Contains(strings.ToLower(reaction.Emoji.Name), emojiTarget) {
-				kekCount += reaction.Count
-			}
-		}
-
-		log.Printf("message %s has %d kek reactions", reactionAdd.MessageID, kekCount)
+		kekCount := getKekCount(message)
+		log.Printf("message %s has %d kek reactions", reaction.MessageID, kekCount)
 
 		if kekCount >= reactionThreshold {
-			log.Println("message reached reaction threshold:", reactionAdd.MessageID)
+			log.Println("message has enough reactions:", reaction.MessageID)
 		}
+	}
+
+	client.AddHandler(func(session *discordgo.Session, reactionAdd *discordgo.MessageReactionAdd) {
+		handleReaction(session, reactionAdd.MessageReaction)
+	})
+
+	client.AddHandler(func(session *discordgo.Session, reactionRemove *discordgo.MessageReactionRemove) {
+		handleReaction(session, reactionRemove.MessageReaction)
+	})
+
+	client.AddHandler(func(session *discordgo.Session, reactionRemoveAll *discordgo.MessageReactionRemoveAll) {
+		handleReaction(session, reactionRemoveAll.MessageReaction)
 	})
 
 	if err = client.Open(); err != nil {
