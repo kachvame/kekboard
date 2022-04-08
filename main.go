@@ -14,6 +14,12 @@ import (
 	"syscall"
 )
 
+type reactionContext struct {
+	Session  *discordgo.Session
+	Reaction *discordgo.MessageReaction
+	GuildID  string
+}
+
 type kekboardMessageState struct {
 	ChannelID string
 	MessageID string
@@ -162,77 +168,99 @@ func main() {
 		})
 	}
 
-	handleReaction := func(session *discordgo.Session, reaction *discordgo.MessageReaction, guildID string) {
-		message, err := session.ChannelMessage(reaction.ChannelID, reaction.MessageID)
-		if err != nil {
-			log.Println("received reaction but unable to get message:", reaction.ChannelID, reaction.MessageID)
+	reactionCh := make(chan reactionContext, 128)
+	done := make(chan bool, 1)
 
-			return
-		}
+	defer func(done chan bool) {
+		done <- true
+	}(done)
 
-		messageKey := getMessageKey(reaction)
-		kekCount := getKekCount(message)
-
-		hasEnoughReactions := kekCount >= reactionThreshold
-
-		messageStateBytes, err := db.Get(messageKey, nil)
-
-		var messageState *kekboardMessageState
-		if err == nil {
-			messageState = &kekboardMessageState{}
-			if err = json.Unmarshal(messageStateBytes, messageState); err != nil {
-				log.Println("failed to unmarshal state:", err)
+	go func() {
+		reactionHandler := func(ctx reactionContext) {
+			message, err := ctx.Session.ChannelMessage(ctx.Reaction.ChannelID, ctx.Reaction.MessageID)
+			if err != nil {
+				log.Println("received reaction but unable to get message:", ctx.Reaction.ChannelID, ctx.Reaction.MessageID)
 
 				return
 			}
-		}
 
-		isInKekboard := messageState != nil
-		shouldEdit := isInKekboard && messageState.Reactions != kekCount
+			messageKey := getMessageKey(ctx.Reaction)
+			kekCount := getKekCount(message)
 
-		if hasEnoughReactions && (!isInKekboard || shouldEdit) {
-			if messageState == nil {
-				messageState = &kekboardMessageState{
-					ChannelID: kekboardChannelId,
+			hasEnoughReactions := kekCount >= reactionThreshold
+
+			messageStateBytes, err := db.Get(messageKey, nil)
+
+			var messageState *kekboardMessageState
+			if err == nil {
+				messageState = &kekboardMessageState{}
+				if err = json.Unmarshal(messageStateBytes, messageState); err != nil {
+					log.Println("failed to unmarshal state:", err)
+
+					return
 				}
 			}
 
-			messageState.Reactions = kekCount
+			isInKekboard := messageState != nil
+			shouldEdit := isInKekboard && messageState.Reactions != kekCount
 
-			message, err := putKekboardMessage(session, message, messageState, guildID)
-			if err != nil {
-				log.Println("failed to put message on kekboard:", err)
+			if hasEnoughReactions && (!isInKekboard || shouldEdit) {
+				if messageState == nil {
+					messageState = &kekboardMessageState{
+						ChannelID: kekboardChannelId,
+					}
+				}
+
+				messageState.Reactions = kekCount
+
+				message, err := putKekboardMessage(ctx.Session, message, messageState, ctx.GuildID)
+				if err != nil {
+					log.Println("failed to put message on kekboard:", err)
+
+					return
+				}
+
+				messageState.MessageID = message.ID
+
+				marshaledState, err := json.Marshal(messageState)
+				if err != nil {
+					log.Println("failed to marshal state:", err)
+
+					return
+				}
+
+				err = db.Put(messageKey, marshaledState, nil)
+				if err != nil {
+					log.Println("failed to update state in leveldb:", err)
+				}
 
 				return
 			}
 
-			messageState.MessageID = message.ID
+			if isInKekboard && !hasEnoughReactions {
+				err = ctx.Session.ChannelMessageDelete(messageState.ChannelID, messageState.MessageID)
+				if err != nil {
+					log.Println("failed to delete message from kekboard:", err)
+				}
 
-			marshaledState, err := json.Marshal(messageState)
-			if err != nil {
-				log.Println("failed to marshal state:", err)
-
-				return
+				err = db.Delete(messageKey, nil)
+				if err != nil {
+					log.Println("failed to delete state from leveldb:", err)
+				}
 			}
 
-			err = db.Put(messageKey, marshaledState, nil)
-			if err != nil {
-				log.Println("failed to update state in leveldb:", err)
-			}
-
-			return
 		}
 
-		if isInKekboard && !hasEnoughReactions {
-			err = session.ChannelMessageDelete(messageState.ChannelID, messageState.MessageID)
-			if err != nil {
-				log.Println("failed to delete message from kekboard:", err)
-			}
+		for ctx := range reactionCh {
+			reactionHandler(ctx)
+		}
+	}()
 
-			err = db.Delete(messageKey, nil)
-			if err != nil {
-				log.Println("failed to delete state from leveldb:", err)
-			}
+	handleReaction := func(session *discordgo.Session, reaction *discordgo.MessageReaction, guildID string) {
+		reactionCh <- reactionContext{
+			Session:  session,
+			Reaction: reaction,
+			GuildID:  guildID,
 		}
 	}
 
