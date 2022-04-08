@@ -5,6 +5,8 @@ import (
 	"github.com/joho/godotenv"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
@@ -27,4 +29,8 @@ func main() {
 	defer func(client *discordgo.Session) {
 		_ = client.Close()
 	}(client)
+
+	signalCh := make(chan os.Signal, 1)
+	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	<-signalCh
 }
