@@ -80,7 +80,7 @@ func main() {
 		_ = db.Close()
 	}(db)
 
-	client.AddHandlerOnce(func(_ *discordgo.Session, ready *discordgo.Ready) {
+	client.AddHandlerOnce(func(session *discordgo.Session, ready *discordgo.Ready) {
 		log.Printf("Logged in as %s#%s\n", ready.User.Username, ready.User.Discriminator)
 	})
 
@@ -149,7 +149,7 @@ func main() {
 	}
 
 	putKekboardMessage := func(session *discordgo.Session, message *discordgo.Message, state *kekboardMessageState, guildID string) (*discordgo.Message, error) {
-		guildMember, err := session.GuildMember(guildID, message.Author.ID)
+		guildMember, err := session.State.Member(guildID, message.Author.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -172,6 +172,19 @@ func main() {
 		})
 	}
 
+	getMessage := func(session *discordgo.Session, channelID, messageID string) (*discordgo.Message, error) {
+		cachedMessage, err := session.State.Message(channelID, messageID)
+		if err == nil {
+			return cachedMessage, nil
+		}
+
+		if err != discordgo.ErrStateNotFound {
+			return nil, err
+		}
+
+		return session.ChannelMessage(channelID, messageID)
+	}
+
 	reactionCh := make(chan reactionContext, 128)
 	done := make(chan bool, 1)
 
@@ -181,7 +194,7 @@ func main() {
 
 	go func() {
 		reactionHandler := func(ctx reactionContext) {
-			message, err := ctx.Session.ChannelMessage(ctx.Reaction.ChannelID, ctx.Reaction.MessageID)
+			message, err := getMessage(ctx.Session, ctx.Reaction.ChannelID, ctx.Reaction.MessageID)
 			if err != nil {
 				log.Println("received reaction but unable to get message:", ctx.Reaction.ChannelID, ctx.Reaction.MessageID)
 
