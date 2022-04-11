@@ -8,10 +8,12 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/util"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
@@ -25,10 +27,22 @@ type reactionContext struct {
 }
 
 type kekboardMessageState struct {
+	UserID    string
 	ChannelID string
 	MessageID string
 	Reactions int
 }
+
+type statistics struct {
+	Username string `json:"username"`
+	Avatar   string `json:"avatar"`
+	Count    int    `json:"count"`
+}
+
+var (
+	statsCacheKey    = []byte("stats")
+	messageKeyPrefix = []byte("message-")
+)
 
 func main() {
 	_ = godotenv.Load()
@@ -95,7 +109,7 @@ func main() {
 	}
 
 	getMessageKey := func(reaction *discordgo.MessageReaction) []byte {
-		return []byte(fmt.Sprintf("message-%s-%s", reaction.ChannelID, reaction.MessageID))
+		return []byte(fmt.Sprintf("%s%s-%s", messageKeyPrefix, reaction.ChannelID, reaction.MessageID))
 	}
 
 	getMessageURL := func(message *discordgo.Message, guildID string) string {
@@ -224,6 +238,7 @@ func main() {
 			if hasEnoughReactions && (!isInKekboard || shouldEdit) {
 				if messageState == nil {
 					messageState = &kekboardMessageState{
+						UserID:    message.Author.ID,
 						ChannelID: kekboardChannelId,
 					}
 				}
@@ -251,6 +266,8 @@ func main() {
 					log.Println("failed to update state in leveldb:", err)
 				}
 
+				_ = db.Delete(statsCacheKey, nil)
+
 				return
 			}
 
@@ -264,6 +281,8 @@ func main() {
 				if err != nil {
 					log.Println("failed to delete state from leveldb:", err)
 				}
+
+				_ = db.Delete(statsCacheKey, nil)
 			}
 
 		}
@@ -302,8 +321,52 @@ func main() {
 	}(client)
 
 	router := chi.NewRouter()
-	router.Get("/", func(response http.ResponseWriter, request *http.Request) {
-		_, _ = response.Write([]byte("Hello, world!"))
+	router.Get("/stats", func(response http.ResponseWriter, request *http.Request) {
+		cachedStatistics, err := db.Get(statsCacheKey, nil)
+		if err == nil {
+			_, _ = response.Write(cachedStatistics)
+
+			return
+		}
+
+		userStatisticsMap := make(map[string]int)
+
+		messageIterator := db.NewIterator(&util.Range{Start: messageKeyPrefix}, nil)
+		for messageIterator.Next() {
+			messageStateBytes := messageIterator.Value()
+
+			messageState := &kekboardMessageState{}
+			err := json.Unmarshal(messageStateBytes, messageState)
+			if err != nil {
+				continue
+			}
+
+			userStatisticsMap[messageState.UserID] += messageState.Reactions
+		}
+		messageIterator.Release()
+
+		userStatistics := make([]statistics, 0, len(userStatisticsMap))
+		for userID, count := range userStatisticsMap {
+			user, err := client.User(userID)
+			if err != nil {
+				continue
+			}
+
+			userStatistics = append(userStatistics, statistics{
+				Username: fmt.Sprintf("%s#%s", user.Username, user.Discriminator),
+				Avatar:   user.AvatarURL(""),
+				Count:    count,
+			})
+		}
+
+		sort.Slice(userStatistics, func(i, j int) bool {
+			return userStatistics[i].Count > userStatistics[j].Count
+		})
+
+		statisticsBytes, _ := json.Marshal(userStatistics)
+
+		_ = db.Put(statsCacheKey, statisticsBytes, nil)
+		_, _ = response.Write(statisticsBytes)
 	})
 
 	httpServer := &http.Server{
