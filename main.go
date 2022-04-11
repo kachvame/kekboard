@@ -28,6 +28,7 @@ type reactionContext struct {
 
 type kekboardMessageState struct {
 	UserID    string
+	GuildID   string
 	ChannelID string
 	MessageID string
 	Reactions int
@@ -239,6 +240,7 @@ func main() {
 				if messageState == nil {
 					messageState = &kekboardMessageState{
 						UserID:    message.Author.ID,
+						GuildID:   ctx.GuildID,
 						ChannelID: kekboardChannelId,
 					}
 				}
@@ -329,7 +331,12 @@ func main() {
 			return
 		}
 
-		userStatisticsMap := make(map[string]int)
+		type userKey struct {
+			userID  string
+			guildID string
+		}
+
+		userStatisticsMap := make(map[userKey]int)
 
 		messageIterator := db.NewIterator(&util.Range{Start: messageKeyPrefix}, nil)
 		for messageIterator.Next() {
@@ -341,16 +348,18 @@ func main() {
 				continue
 			}
 
-			userStatisticsMap[messageState.UserID] += messageState.Reactions
+			userStatisticsMap[userKey{messageState.UserID, messageState.GuildID}] += messageState.Reactions
 		}
 		messageIterator.Release()
 
 		userStatistics := make([]statistics, 0, len(userStatisticsMap))
-		for userID, count := range userStatisticsMap {
-			user, err := client.User(userID)
+		for key, count := range userStatisticsMap {
+			member, err := client.State.Member(key.guildID, key.userID)
 			if err != nil {
 				continue
 			}
+
+			user := member.User
 
 			userStatistics = append(userStatistics, statistics{
 				Username: fmt.Sprintf("%s#%s", user.Username, user.Discriminator),
