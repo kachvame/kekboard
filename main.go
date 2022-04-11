@@ -1,17 +1,21 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
+	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 	"github.com/syndtr/goleveldb/leveldb"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 )
 
 type reactionContext struct {
@@ -284,7 +288,42 @@ func main() {
 		_ = client.Close()
 	}(client)
 
-	signalCh := make(chan os.Signal, 1)
-	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-signalCh
+	router := chi.NewRouter()
+	router.Get("/", func(response http.ResponseWriter, request *http.Request) {
+		_, _ = response.Write([]byte("Hello, world!"))
+	})
+
+	httpServer := &http.Server{
+		Addr:    ":8080",
+		Handler: router,
+	}
+
+	gracefulShutdown := func(server *http.Server, timeout time.Duration) error {
+		done := make(chan error, 1)
+		go func() {
+			signalCh := make(chan os.Signal, 1)
+			signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+			<-signalCh
+
+			ctx := context.Background()
+
+			var cancel context.CancelFunc
+			if timeout > 0 {
+				ctx, cancel = context.WithTimeout(ctx, timeout)
+				defer cancel()
+			}
+
+			done <- server.Shutdown(ctx)
+		}()
+
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			return err
+		}
+
+		return <-done
+	}
+
+	if err := gracefulShutdown(httpServer, 10*time.Second); err != nil {
+		log.Println("http server error:", err)
+	}
 }
