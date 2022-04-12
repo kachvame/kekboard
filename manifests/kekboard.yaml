@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: kekboard-persistent-volume
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data/kekboard"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kekboard-persistent-volume-claim
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kekboard-deployment
+spec:
+  selector:
+    matchLabels:
+      app: kekboard
+  template:
+    metadata:
+      labels:
+        app: kekboard
+    spec:
+      volumes:
+      - name: kekboard-persistent-volume-storage
+        persistentVolumeClaim:
+          claimName: kekboard-persistent-volume-claim
+      containers:
+      - image: ghcr.io/kachvame/kekboard
+        name: kekboard
+        env:
+        - name: BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: kekboard-token-secret
+              key: BOT_TOKEN
+        - name: REACTION_THRESHOLD
+          value: "5"
+        - name: EMOJI_TARGET
+          value: "kek"
+        - name: DB_PATH
+          value: "/data/kekboard.leveldb"
+        - name: KEKBOARD_CHANNEL_ID
+          value: "963154894989197392"
+        - name: KEK_EMOJI
+          value: "<:kek:804343486924849162>"
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - mountPath: "/data"
+          name: kekboard-persistent-volume-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kekboard-service
+spec:
+  selector:
+    app: kekboard
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
