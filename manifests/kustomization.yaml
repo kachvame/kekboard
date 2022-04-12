@@ -9,4 +9,3 @@ resources:
 - ./dashboard.yaml
 - ./letsencrypt-issuer.yaml
 - ./traefik-middleware.yaml
-namespace: kekboard

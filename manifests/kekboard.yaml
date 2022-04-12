@@ -2,6 +2,7 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: kekboard-persistent-volume
+  namespace: kekboard
   labels:
     type: local
 spec:
@@ -17,6 +18,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: kekboard-persistent-volume-claim
+  namespace: kekboard
 spec:
   storageClassName: manual
   accessModes:
@@ -29,6 +31,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kekboard-deployment
+  namespace: kekboard
 spec:
   selector:
     matchLabels:
@@ -71,6 +74,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: kekboard-service
+  namespace: kekboard
 spec:
   selector:
     app: kekboard
