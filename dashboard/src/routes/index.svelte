@@ -1,11 +1,14 @@
 <script context="module">
   export const load = async ({ fetch }) => {
-    const stats = await fetch('http://localhost:8080/stats').then((res) =>
-      res.json(),
-    );
+    const stats = await fetch('/stats').then((res) => res.json());
 
     return {
-      props: { rows: stats },
+      props: {
+        rows: stats.map((stat) => ({
+          ...stat,
+          id: stat.username,
+        })),
+      },
     };
   };
 </script>
