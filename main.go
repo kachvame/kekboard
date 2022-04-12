@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -323,6 +324,11 @@ func main() {
 	}(client)
 
 	router := chi.NewRouter()
+
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins: []string{"*"},
+	}))
+
 	router.Get("/stats", func(response http.ResponseWriter, request *http.Request) {
 		cachedStatistics, err := db.Get(statsCacheKey, nil)
 		if err == nil {
