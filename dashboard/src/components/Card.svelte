@@ -9,7 +9,7 @@
       <div class="avatar">
         <img class="avatar" src={avatar} alt={username} />
       </div>
-      <h2 class="card-title">{username.split('#')[0]}</h2>
+      <h2 class="card-title">{username}</h2>
       <div class="card-count">{count}</div>
     </div>
   {/each}
@@ -20,6 +20,7 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
+    gap: 2em;
     align-items: center;
     margin: 0 auto;
     width: 100%;
@@ -35,24 +36,19 @@
     position: relative;
     padding: 1rem;
     height: 100%;
-    width: 30%;
+    flex-basis: 30%;
     display: flex;
     flex-direction: column;
     align-items: center;
   }
 
-  .card-count::before {
-    content: 'Kek count: ';
-    display: inline-block;
-    font-weight: 500;
-  }
-
   .card-count {
     font-size: 1.2rem;
-    font-weight: 700;
+    font-weight: 300;
 
     width: fit-content;
     margin: 0 auto auto;
+    text-align: center;
   }
 
   .crown-0 {

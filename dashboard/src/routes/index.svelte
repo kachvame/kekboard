@@ -39,12 +39,27 @@
   <title>kekboard</title>
 </svelte:head>
 <Header />
-<div class="top-scores">
-  <Card data={topScorers} />
+
+<div class="container">
+  <div class="wrapper">
+    <div class="top-scores">
+      <Card data={topScorers} />
+    </div>
+    <DataTable {headers} {rows} />
+  </div>
 </div>
-<DataTable {headers} {rows} />
 
 <style>
+  .container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .wrapper {
+    width: min(100%, 50rem);
+  }
+
   .top-scores {
     margin-top: 2rem;
     margin-bottom: 2rem;
