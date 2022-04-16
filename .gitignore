@@ -4,3 +4,4 @@ kekboard.leveldb/
 .gitsecret/keys/random_seed
 !*.secret
 .env
+yarn.lock

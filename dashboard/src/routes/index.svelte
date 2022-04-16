@@ -4,8 +4,10 @@
 
     return {
       props: {
-        rows: stats.map((stat) => ({
+        topScorers: stats.slice(0, 3),
+        rows: stats.slice(3).map((stat) => ({
           ...stat,
+          username: stat.username.split('#')[0],
           id: stat.username,
         })),
       },
@@ -16,6 +18,7 @@
 <script>
   import 'carbon-components-svelte/css/g90.css';
   import { DataTable } from 'carbon-components-svelte';
+  import Card from '../components/Card.svelte';
 
   const headers = [
     {
@@ -29,6 +32,8 @@
   ];
 
   export let rows;
+  export let topScorers;
 </script>
 
+<Card data={topScorers} />
 <DataTable {headers} {rows} />
