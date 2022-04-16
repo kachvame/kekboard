@@ -18,6 +18,7 @@
   import 'carbon-components-svelte/css/g90.css';
   import { DataTable } from 'carbon-components-svelte';
   import Card from '../components/Card.svelte';
+  import Header from '../components/Header.svelte';
 
   const headers = [
     {
@@ -34,5 +35,18 @@
   export let topScorers;
 </script>
 
-<Card data={topScorers} />
+<svelte:head>
+  <title>kekboard</title>
+</svelte:head>
+<Header />
+<div class="top-scores">
+  <Card data={topScorers} />
+</div>
 <DataTable {headers} {rows} />
+
+<style>
+  .top-scores {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+  }
+</style>
