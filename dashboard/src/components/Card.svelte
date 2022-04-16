@@ -6,10 +6,10 @@
   {#each data as { username, count, avatar }, index}
     <div class="card-body">
       {#if index === 0}
-        <div class="crown" />
+        <div class="crown"></div>
       {/if}
       <div class="avatar">
-        <img class="avatar" src={avatar} alt={username} />
+        <img class="avatar" src="{avatar}" alt="{username}" />
       </div>
       <h2 class="card-title">{username}</h2>
       <div class="card-count">{count}</div>

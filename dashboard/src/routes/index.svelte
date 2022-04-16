@@ -43,9 +43,9 @@
 <div class="container">
   <div class="wrapper">
     <div class="top-scores">
-      <Card data={topScorers} />
+      <Card data="{topScorers}" />
     </div>
-    <DataTable {headers} {rows} />
+    <DataTable headers="{headers}" rows="{rows}" />
   </div>
 </div>
 
