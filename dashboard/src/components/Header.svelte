@@ -1,3 +1,10 @@
+<header class="header">
+  <div class="header-kek">
+    <img src="kek.jpg" class="header-kek" />
+  </div>
+  <h1 class="header-title">kekboard</h1>
+</header>
+
 <style lang="scss">
   @import '@carbon/colors';
 
@@ -19,11 +26,3 @@
     height: 100px;
   }
 </style>
-<header class="header">
-    <div class="header-kek">
-        <img src="kek.jpg" class="header-kek"/>
-    </div>
-    <h1 class="header-title">
-        kekboard
-    </h1>
-</header>
