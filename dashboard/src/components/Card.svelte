@@ -5,7 +5,9 @@
 <div class="wrapper">
   {#each data as { username, count, avatar }, index}
     <div class="card-body">
-      <div class:crown={index === 0}></div>
+      {#if index === 0}
+        <div class="crown" />
+      {/if}
       <div class="avatar">
         <img class="avatar" src={avatar} alt={username} />
       </div>
