@@ -41,7 +41,12 @@
         margin-bottom: 2rem;
     }
 </style>
+<svelte:head>
 
+    <title>
+        kekboard
+    </title>
+</svelte:head>
 <Header/>
 <div class="top-scores">
     <Card data={topScorers}/>
