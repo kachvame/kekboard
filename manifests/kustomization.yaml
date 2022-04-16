@@ -3,9 +3,10 @@ kind: Kustomization
 resources:
 - https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.17.4/controller.yaml
 - https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml
+- ./storage.yaml
 - ./namespace.yaml
 - ./kekboard.yaml
-- ./kekboard-token-secret-sealed.json
+- ./kekboard-token-secret-sealed.yaml
 - ./dashboard.yaml
 - ./letsencrypt-issuer.yaml
 - ./traefik-middleware.yaml
