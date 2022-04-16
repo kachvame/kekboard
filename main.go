@@ -368,7 +368,7 @@ func main() {
 			user := member.User
 
 			userStatistics = append(userStatistics, statistics{
-				Username: fmt.Sprintf("%s#%s", user.Username, user.Discriminator),
+				Username: user.Username,
 				Avatar:   user.AvatarURL(""),
 				Count:    count,
 			})

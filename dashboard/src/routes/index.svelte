@@ -7,7 +7,6 @@
         topScorers: stats.slice(0, 3),
         rows: stats.slice(3).map((stat) => ({
           ...stat,
-          username: stat.username.split('#')[0],
           id: stat.username,
         })),
       },
