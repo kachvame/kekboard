@@ -5,7 +5,7 @@
 <div class="wrapper">
   {#each data as { username, count, avatar }, index}
     <div class="card-body">
-      <div class="crown-{index}" />
+      <div class:crown={index === 0}></div>
       <div class="avatar">
         <img class="avatar" src={avatar} alt={username} />
       </div>
@@ -51,7 +51,7 @@
     text-align: center;
   }
 
-  .crown-0 {
+  .crown {
     position: absolute;
     top: 0.2rem;
     left: 50%;
