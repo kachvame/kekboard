@@ -28,6 +28,12 @@
     width: 100%;
   }
 
+  @media (max-width: 530px) {
+    .wrapper > .card-body:first-child {
+      flex: 0 0 100%;
+    }
+  }
+
   .avatar {
     width: 3rem;
     height: 3rem;
