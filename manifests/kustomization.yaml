@@ -9,4 +9,3 @@ resources:
 - ./kekboard-token-secret-sealed.yaml
 - ./dashboard.yaml
 - ./letsencrypt-issuer.yaml
-- ./traefik-middleware.yaml
