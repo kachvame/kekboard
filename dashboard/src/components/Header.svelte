@@ -9,13 +9,18 @@
   @import '@carbon/colors';
 
   .header {
+    display: flex;
+    place-items: center;
+    justify-content: center;
+    gap: 2vw;
     background-color: $gray-100;
-    padding-top: 2rem;
-    padding-bottom: 2rem;
+    padding-top: 2vmin;
+    padding-bottom: 2vmin;
   }
 
   .header-title {
     text-align: center;
+    font-size: min(2.625rem, 10vw);
   }
 
   .header-kek {
@@ -23,6 +28,6 @@
   }
 
   .header-kek > img {
-    height: 100px;
+    height: min(6.25rem, 20vw);
   }
 </style>
