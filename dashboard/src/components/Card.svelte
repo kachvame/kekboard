@@ -44,7 +44,7 @@
     position: relative;
     padding: 1rem;
     height: 100%;
-    flex-basis: 30%;
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
