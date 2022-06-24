@@ -4,12 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/cors"
-	"github.com/joho/godotenv"
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/util"
 	"log"
 	"net/http"
 	"os"
@@ -19,6 +13,14 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
+	"github.com/joho/godotenv"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 type reactionContext struct {
@@ -328,6 +330,10 @@ func main() {
 	router.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"*"},
 	}))
+	router.Use(middleware.RequestID)
+	router.Use(middleware.RealIP)
+	router.Use(middleware.Logger)
+	router.Use(middleware.Recoverer)
 
 	router.Get("/stats", func(response http.ResponseWriter, request *http.Request) {
 		cachedStatistics, err := db.Get(statsCacheKey, nil)
