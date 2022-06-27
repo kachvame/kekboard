@@ -82,6 +82,11 @@ func main() {
 		log.Fatalln("`KEK_EMOJI` env variable is not set")
 	}
 
+	ignoredChannels := make(map[string]struct{})
+	for _, ignoredChannel := range strings.Split(os.Getenv("IGNORED_CHANNELS"), ",") {
+		ignoredChannels[ignoredChannel] = struct{}{}
+	}
+
 	client, err := discordgo.New("Bot " + token)
 	if err != nil {
 		log.Fatalln("failed to create discord client:", err)
@@ -212,6 +217,10 @@ func main() {
 
 	go func() {
 		reactionHandler := func(ctx reactionContext) {
+			if _, ok := ignoredChannels[ctx.Reaction.ChannelID]; ok {
+				return
+			}
+
 			message, err := getMessage(ctx.Session, ctx.Reaction.ChannelID, ctx.Reaction.MessageID)
 			if err != nil {
 				log.Println("received reaction but unable to get message:", ctx.Reaction.ChannelID, ctx.Reaction.MessageID)

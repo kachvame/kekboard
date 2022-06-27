@@ -48,6 +48,8 @@ spec:
           value: "963154894989197392"
         - name: KEK_EMOJI
           value: "<:kek:804343486924849162>"
+        - name: IGNORED_CHANNELS
+          value: "825440092533293066"
         ports:
         - containerPort: 8080
         volumeMounts:
