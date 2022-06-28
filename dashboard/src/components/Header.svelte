@@ -1,6 +1,6 @@
 <header class="header">
   <div class="header-kek">
-    <img src="kek.jpg" class="header-kek" />
+    <img alt="kekw" src="kek.jpg" class="header-kek" />
   </div>
   <h1 class="header-title">kekboard</h1>
 </header>
