@@ -30,8 +30,9 @@ spec:
         persistentVolumeClaim:
           claimName: kekboard-persistent-volume-claim
       containers:
-      - image: ghcr.io/kachvame/kekboard
-        name: kekboard
+      - name: kekboard
+        image: ghcr.io/kachvame/kekboard
+        imagePullPolicy: Always
         env:
         - name: BOT_TOKEN
           valueFrom:

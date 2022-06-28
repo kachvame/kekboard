@@ -17,6 +17,7 @@ spec:
       containers:
       - name: dashboard
         image: ghcr.io/kachvame/kekboard-dashboard
+        imagePullPolicy: Always
         env:
         - name: BACKEND_URL
           value: http://kekboard-service.kekboard.svc.cluster.local:8080
